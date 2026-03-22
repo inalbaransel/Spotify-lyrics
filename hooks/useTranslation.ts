@@ -21,7 +21,7 @@ export function useTranslation(text: string | null) {
     setLoading(true);
 
     fetch(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|tr`
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|tr`
     )
       .then((r) => r.json())
       .then((data) => {
