@@ -25,20 +25,27 @@ export function LyricLine({
   const sizeClass = getFontSize(allWords);
 
   return (
-    <div className="flex flex-wrap justify-center items-end gap-x-[0.2em] gap-y-[0.1em] px-8 max-w-[92vw]">
-      {displayWords.map((word, i) => (
-        <span
-          key={`${lineIndex}-${i}`}
-          className={`${sizeClass} font-black leading-none select-none animate-word-in`}
-          style={{
-            fontFamily: "var(--font-playfair), Georgia, serif",
-            color: textColor,
-            transition: "color 1.5s ease",
-          }}
-        >
-          {word}
-        </span>
-      ))}
+    <div className="flex flex-wrap justify-center items-end gap-x-[0.3em] gap-y-[0.15em] px-8 max-w-[92vw]">
+      {allWords.map((word, i) => {
+        const isVisible = i < displayWords.length;
+        return (
+          <span
+            // key changes when word goes from hidden→visible → remounts → animation plays
+            key={`${lineIndex}-${i}-${isVisible}`}
+            className={`${sizeClass} font-black leading-none select-none ${
+              isVisible ? "animate-word-in" : "opacity-0"
+            }`}
+            style={{
+              fontFamily: "var(--font-playfair), Georgia, serif",
+              color: textColor,
+              transition: "color 1.5s ease",
+            }}
+            aria-hidden={!isVisible}
+          >
+            {word}
+          </span>
+        );
+      })}
     </div>
   );
 }
