@@ -7,6 +7,7 @@ import { useAlbumColors } from "@/hooks/useAlbumColors";
 import { LyricLine } from "./LyricLine";
 import { SongInfo } from "./SongInfo";
 import { IdleScreen } from "./IdleScreen";
+import { ProgressBar } from "./ProgressBar";
 
 export function LyricsPlayer() {
   const { track, progressMs, isPlaying } = useSpotifyPlayer();
@@ -69,6 +70,12 @@ export function LyricsPlayer() {
       )}
 
       <SongInfo track={track} textColor={colors.muted} />
+      <ProgressBar
+        progressMs={progressMs}
+        durationMs={track.durationMs}
+        textColor={colors.text}
+        barColor={colors.text}
+      />
     </div>
   );
 }

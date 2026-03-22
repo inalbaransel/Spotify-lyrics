@@ -25,7 +25,10 @@ export function LyricLine({
   const sizeClass = getFontSize(allWords);
 
   return (
-    <div className="flex flex-wrap justify-center items-end gap-x-[0.3em] gap-y-[0.15em] px-8 max-w-[92vw]">
+    <div
+      className="flex flex-wrap justify-center items-end px-8 max-w-[92vw]"
+      style={{ columnGap: "0.35em", rowGap: "0.15em" }}
+    >
       {allWords.map((word, i) => {
         const isVisible = i < displayWords.length;
         return (
