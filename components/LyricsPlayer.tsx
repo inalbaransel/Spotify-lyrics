@@ -4,16 +4,20 @@ import { useSpotifyPlayer } from "@/hooks/useSpotifyPlayer";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useWordSync } from "@/hooks/useWordSync";
 import { useAlbumColors } from "@/hooks/useAlbumColors";
+import { useTranslation } from "@/hooks/useTranslation";
 import { LyricLine } from "./LyricLine";
-import { SongInfo } from "./SongInfo";
+import { NowPlayingBar } from "./NowPlayingBar";
+import { TranslationPanel } from "./TranslationPanel";
 import { IdleScreen } from "./IdleScreen";
-import { ProgressBar } from "./ProgressBar";
 
 export function LyricsPlayer() {
   const { track, progressMs, isPlaying } = useSpotifyPlayer();
   const { lines, loading, notFound } = useLyrics(track);
   const { displayWords, allWords, lineIndex } = useWordSync(lines, progressMs);
   const colors = useAlbumColors(track?.imageUrl ?? null);
+
+  const currentLineText = lineIndex >= 0 ? (lines[lineIndex]?.text ?? null) : null;
+  const { translated, loading: translating } = useTranslation(currentLineText);
 
   if (!track || !isPlaying) {
     return <IdleScreen />;
@@ -59,7 +63,6 @@ export function LyricsPlayer() {
       )}
 
       {!loading && !notFound && lineIndex >= 0 && displayWords.length > 0 && (
-        // key=lineIndex causes full remount (+ re-animation) on every new line
         <LyricLine
           key={lineIndex}
           displayWords={displayWords}
@@ -69,12 +72,18 @@ export function LyricsPlayer() {
         />
       )}
 
-      <SongInfo track={track} textColor={colors.muted} />
-      <ProgressBar
+      <NowPlayingBar
+        track={track}
         progressMs={progressMs}
-        durationMs={track.durationMs}
         textColor={colors.text}
-        barColor={colors.text}
+        mutedColor={colors.muted}
+      />
+
+      <TranslationPanel
+        translated={translated}
+        loading={translating}
+        lineIndex={lineIndex}
+        mutedColor={colors.muted}
       />
     </div>
   );
