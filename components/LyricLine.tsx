@@ -25,10 +25,7 @@ export function LyricLine({
   const sizeClass = getFontSize(allWords);
 
   return (
-    <div
-      className="flex flex-wrap justify-center items-end px-8 max-w-[92vw]"
-      style={{ columnGap: "0.35em", rowGap: "0.15em" }}
-    >
+    <div className="flex flex-wrap justify-center items-end px-8 max-w-[92vw]">
       {allWords.map((word, i) => {
         const isVisible = i < displayWords.length;
         return (
@@ -42,6 +39,8 @@ export function LyricLine({
               fontFamily: "var(--font-playfair), Georgia, serif",
               color: textColor,
               transition: "color 1.5s ease",
+              marginRight: i < allWords.length - 1 ? "0.3em" : 0,
+              marginBottom: "0.1em",
             }}
             aria-hidden={!isVisible}
           >

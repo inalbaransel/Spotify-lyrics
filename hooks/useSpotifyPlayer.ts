@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { getCurrentlyPlaying } from "@/lib/spotify-client";
 import type { NowPlayingResponse } from "@/types/spotify";
 
+const POLL_INTERVAL = 3000; // 3s — drift compensation keeps progress smooth
+
 export function useSpotifyPlayer() {
   const [nowPlaying, setNowPlaying] = useState<NowPlayingResponse | null>(null);
   const [estimatedProgressMs, setEstimatedProgressMs] = useState(0);
@@ -18,20 +20,38 @@ export function useSpotifyPlayer() {
       fetchedAtRef.current = Date.now();
       isPlayingRef.current = data?.isPlaying ?? false;
       setNowPlaying(data);
-      if (data) {
-        setEstimatedProgressMs(data.progressMs);
-      }
+      if (data) setEstimatedProgressMs(data.progressMs);
       setError(false);
     } catch {
       setError(true);
     }
   }, []);
 
-  // Poll Spotify every 1 second
+  // Poll with visibility awareness: pause when tab is hidden
   useEffect(() => {
-    fetchNowPlaying();
-    const interval = setInterval(fetchNowPlaying, 1000);
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    function start() {
+      fetchNowPlaying();
+      interval = setInterval(fetchNowPlaying, POLL_INTERVAL);
+    }
+
+    function stop() {
+      if (interval) { clearInterval(interval); interval = null; }
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") start();
+      else stop();
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    start();
+
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [fetchNowPlaying]);
 
   // Drift compensation: advance progress every 100ms when playing

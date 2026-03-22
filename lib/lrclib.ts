@@ -11,7 +11,11 @@ export async function fetchLrclib(
     duration: String(Math.round(durationSecs)),
   });
 
-  const res = await fetch(`/api/lyrics?${params}`);
+  // Direct browser → lrclib.net call (supports CORS), no Vercel serverless hop
+  const res = await fetch(`https://lrclib.net/api/get?${params}`, {
+    headers: { "Lrclib-Client": "spotify-lyrics-app" },
+  });
+
   if (!res.ok) return null;
 
   const data = await res.json();
