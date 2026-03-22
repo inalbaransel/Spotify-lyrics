@@ -11,7 +11,7 @@ import { IdleScreen } from "./IdleScreen";
 export function LyricsPlayer() {
   const { track, progressMs, isPlaying } = useSpotifyPlayer();
   const { lines, loading, notFound } = useLyrics(track);
-  const { word, wordIndex } = useWordSync(lines, progressMs);
+  const { displayWords, allWords, lineIndex } = useWordSync(lines, progressMs);
   const colors = useAlbumColors(track?.imageUrl ?? null);
 
   if (!track || !isPlaying) {
@@ -50,18 +50,20 @@ export function LyricsPlayer() {
         </p>
       )}
 
-      {!loading && !notFound && wordIndex === -1 && (
+      {!loading && !notFound && lineIndex === -1 && (
         <div
-          className="w-3 h-3 rounded-full opacity-40"
+          className="w-3 h-3 rounded-full opacity-30"
           style={{ backgroundColor: colors.muted }}
         />
       )}
 
-      {!loading && !notFound && word && (
+      {!loading && !notFound && lineIndex >= 0 && displayWords.length > 0 && (
+        // key=lineIndex causes full remount (+ re-animation) on every new line
         <LyricLine
-          key={wordIndex}
-          word={word}
-          wordIndex={wordIndex}
+          key={lineIndex}
+          displayWords={displayWords}
+          allWords={allWords}
+          lineIndex={lineIndex}
           textColor={colors.text}
         />
       )}

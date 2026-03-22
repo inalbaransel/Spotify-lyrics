@@ -3,57 +3,54 @@
 import { useMemo } from "react";
 import type { LyricLine } from "@/types/lyrics";
 
-interface WordTiming {
-  timeMs: number;
-  word: string;
-}
-
-function computeWordTimings(lines: LyricLine[]): WordTiming[] {
-  const result: WordTiming[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const lineStart = lines[i].timeMs;
-    const lineEnd =
-      i + 1 < lines.length ? lines[i + 1].timeMs : lineStart + 4000;
-    const words = lines[i].text.split(/\s+/).filter(Boolean);
-    if (!words.length) continue;
-
-    const duration = lineEnd - lineStart;
-    const wordDuration = duration / words.length;
-
-    words.forEach((word, j) => {
-      result.push({ timeMs: lineStart + j * wordDuration, word });
-    });
-  }
-
-  return result;
+export interface WordSyncResult {
+  displayWords: string[];  // accumulated words shown so far in current line
+  allWords: string[];      // all words in current line (for sizing)
+  lineIndex: number;       // changes when line changes → triggers screen clear
+  wordIndex: number;       // unique id for last added word → triggers word animation
 }
 
 export function useWordSync(
   lines: LyricLine[],
   progressMs: number
-): { word: string | null; wordIndex: number } {
-  const wordTimings = useMemo(() => computeWordTimings(lines), [lines]);
-
+): WordSyncResult {
   return useMemo(() => {
-    if (!wordTimings.length) return { word: null, wordIndex: -1 };
+    const empty = { displayWords: [], allWords: [], lineIndex: -1, wordIndex: -1 };
+    if (!lines.length) return empty;
 
-    let lo = 0,
-      hi = wordTimings.length - 1,
-      result = -1;
-
+    // Binary search: find active line
+    let lo = 0, hi = lines.length - 1, lineIndex = -1;
     while (lo <= hi) {
       const mid = (lo + hi) >> 1;
-      if (wordTimings[mid].timeMs <= progressMs) {
-        result = mid;
-        lo = mid + 1;
-      } else {
-        hi = mid - 1;
-      }
+      if (lines[mid].timeMs <= progressMs) { lineIndex = mid; lo = mid + 1; }
+      else hi = mid - 1;
     }
 
-    return result >= 0
-      ? { word: wordTimings[result].word, wordIndex: result }
-      : { word: null, wordIndex: -1 };
-  }, [wordTimings, progressMs]);
+    if (lineIndex === -1) return empty;
+
+    const line = lines[lineIndex];
+    const allWords = line.text.split(/\s+/).filter(Boolean);
+    if (!allWords.length) return empty;
+
+    const lineStart = line.timeMs;
+    const lineEnd =
+      lineIndex + 1 < lines.length
+        ? lines[lineIndex + 1].timeMs
+        : lineStart + 4000;
+
+    const duration = Math.max(lineEnd - lineStart, 500);
+    const wordDuration = duration / allWords.length;
+    const elapsed = progressMs - lineStart;
+    const wordPos = Math.min(
+      Math.floor(elapsed / wordDuration),
+      allWords.length - 1
+    );
+
+    return {
+      displayWords: allWords.slice(0, wordPos + 1),
+      allWords,
+      lineIndex,
+      wordIndex: lineIndex * 10000 + wordPos,
+    };
+  }, [lines, progressMs]);
 }
