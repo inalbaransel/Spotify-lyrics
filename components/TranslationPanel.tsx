@@ -17,15 +17,16 @@ export function TranslationPanel({
 
   return (
     <div
-      className="fixed bottom-8 right-8 max-w-[260px] text-right"
+      // Mobilde: sağ üst — Masaüstünde: sağ alt
+      className="fixed top-6 right-6 max-w-[200px] text-right md:top-auto md:bottom-8 md:right-8 md:max-w-[300px]"
       style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
     >
       <p
         key={lineIndex}
-        className="text-sm italic leading-snug animate-fade-in"
+        className="text-sm italic leading-snug animate-fade-in md:text-xl md:leading-normal"
         style={{
           color: mutedColor,
-          opacity: loading ? 0.3 : 0.65,
+          opacity: loading ? 0.3 : 0.7,
           transition: "color 1.5s ease, opacity 0.3s ease",
         }}
       >
