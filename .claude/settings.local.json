@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/baran/AppData/Local/Programs/Antigravity/bin//**)",
+      "Read(//c/Users/baran/AppData/Roaming/**)",
+      "Bash(cmd /c \"node --version && npm --version && npx --version\")",
+      "Bash(cmd /c \"where node 2>&1 & where npm 2>&1 & where npx 2>&1\")",
+      "Bash(cmd /c \"where node\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(export 'PATH=$PATH:/c/Program Files/nodejs:/c/Users/baran/AppData/Roaming/npm')",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Read(//c/Users/baran/**)",
+      "Bash(npm --version)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/nodejs\")",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --app --no-src-dir --no-eslint --import-alias \"@/*\" --yes)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --app --no-src-dir --no-eslint --import-alias \"@/*\" --yes --name \"spotify-lyrics\")",
+      "Bash(npm init:*)",
+      "Bash(npm pkg:*)",
+      "Bash(npm install:*)",
+      "Bash(npm audit:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}

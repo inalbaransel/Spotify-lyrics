@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #E8D5B0;
+  --color-brown: #3B2A1A;
+  --color-brown-light: #6B4C2A;
+  --color-brown-muted: #9B7D5A;
+
+  --font-display: var(--font-playfair), Georgia, serif;
+}
+
+html,
+body {
+  background-color: #E8D5B0;
+  color: #3B2A1A;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation-name: fade-in;
+}
