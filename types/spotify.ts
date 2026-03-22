@@ -10,6 +10,7 @@ export interface SpotifyTrack {
   artists: string[];
   album: string;
   durationMs: number;
+  imageUrl: string | null;
 }
 
 export interface NowPlayingResponse {

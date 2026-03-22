@@ -15,17 +15,24 @@ body {
   color: #3B2A1A;
 }
 
-@keyframes fade-in {
-  from {
+@keyframes word-in {
+  0% {
     opacity: 0;
-    transform: translateY(12px);
+    transform: scale(0.75) translateY(8px);
+    filter: blur(4px);
   }
-  to {
+  60% {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1.04) translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
   }
 }
 
-.animate-fade-in {
-  animation-name: fade-in;
+.animate-word-in {
+  animation: word-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

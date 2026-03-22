@@ -1,26 +1,32 @@
 "use client";
 
 interface LyricLineProps {
-  text: string;
-  animationKey: number;
+  word: string;
+  wordIndex: number;
+  textColor: string;
 }
 
-export function LyricLine({ text, animationKey }: LyricLineProps) {
-  const isLong = text.length > 30;
-  const sizeClass = isLong ? "text-5xl md:text-7xl" : "text-7xl md:text-9xl";
+export function LyricLine({ word, wordIndex, textColor }: LyricLineProps) {
+  const len = word.length;
+  const sizeClass =
+    len <= 4
+      ? "text-[18vw]"
+      : len <= 8
+      ? "text-[13vw]"
+      : len <= 12
+      ? "text-[9vw]"
+      : "text-[6vw]";
 
   return (
     <div
-      key={animationKey}
-      className={`${sizeClass} font-black text-[#3B2A1A] text-center leading-none px-8 animate-fade-in`}
+      key={wordIndex}
+      className={`${sizeClass} font-black text-center leading-none px-8 select-none animate-word-in`}
       style={{
         fontFamily: "var(--font-playfair), Georgia, serif",
-        animationDuration: "0.4s",
-        animationTimingFunction: "ease-out",
-        animationFillMode: "both",
+        color: textColor,
       }}
     >
-      {text}
+      {word}
     </div>
   );
 }

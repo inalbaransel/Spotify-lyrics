@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
       artists: data.item.artists.map((a: { name: string }) => a.name),
       album: data.item.album.name,
       durationMs: data.item.duration_ms,
+      imageUrl: data.item.album.images?.[0]?.url ?? null,
     },
   };
 
