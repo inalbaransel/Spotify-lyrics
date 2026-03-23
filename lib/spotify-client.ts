@@ -23,15 +23,22 @@ async function refreshAccessToken(refreshToken: string): Promise<string> {
   return data.access_token;
 }
 
+let refreshPromise: Promise<string> | null = null;
+
 async function getValidAccessToken(): Promise<string> {
   const tokens = getTokens();
   if (!tokens) throw new Error("Not authenticated");
 
-  if (isTokenExpired(tokens)) {
-    return refreshAccessToken(tokens.refreshToken);
-  }
+  if (!isTokenExpired(tokens)) return tokens.accessToken;
 
-  return tokens.accessToken;
+  // Eğer zaten bir refresh devam ediyorsa, aynı promise'i bekle (double-refresh önlenir)
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = refreshAccessToken(tokens.refreshToken).finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
 }
 
 export async function getCurrentlyPlaying(): Promise<NowPlayingResponse | null> {

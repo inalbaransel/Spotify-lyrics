@@ -10,14 +10,17 @@ import { NowPlayingBar } from "./NowPlayingBar";
 import { TranslationPanel } from "./TranslationPanel";
 import { IdleScreen } from "./IdleScreen";
 
+const LYRICS_ENABLED = process.env.NEXT_PUBLIC_LYRICS_ENABLED !== "false";
+
 export function LyricsPlayer() {
   const { track, progressMs, isPlaying } = useSpotifyPlayer();
-  const { lines, loading, notFound } = useLyrics(track);
+  const { lines, loading, notFound } = useLyrics(LYRICS_ENABLED ? track : null);
   const { displayWords, allWords, lineIndex } = useWordSync(lines, progressMs);
   const colors = useAlbumColors(track?.imageUrl ?? null);
 
-  const currentLineText = lineIndex >= 0 ? (lines[lineIndex]?.text ?? null) : null;
-  const { translated, loading: translating } = useTranslation(currentLineText);
+  const currentLineText = LYRICS_ENABLED && lineIndex >= 0 ? (lines[lineIndex]?.text ?? null) : null;
+  const nextLineText = LYRICS_ENABLED && lineIndex >= 0 ? (lines[lineIndex + 1]?.text ?? null) : null;
+  const { translated, loading: translating } = useTranslation(currentLineText, nextLineText);
 
   if (!track || !isPlaying) {
     return <IdleScreen />;
@@ -31,7 +34,7 @@ export function LyricsPlayer() {
         transition: "background-color 1.5s ease",
       }}
     >
-      {loading && (
+      {LYRICS_ENABLED && loading && (
         <p
           className="text-2xl"
           style={{
@@ -43,7 +46,7 @@ export function LyricsPlayer() {
         </p>
       )}
 
-      {!loading && notFound && (
+      {LYRICS_ENABLED && !loading && notFound && (
         <p
           className="text-2xl text-center px-8"
           style={{
@@ -55,14 +58,14 @@ export function LyricsPlayer() {
         </p>
       )}
 
-      {!loading && !notFound && lineIndex === -1 && (
+      {LYRICS_ENABLED && !loading && !notFound && lineIndex === -1 && (
         <div
           className="w-3 h-3 rounded-full opacity-30"
           style={{ backgroundColor: colors.muted }}
         />
       )}
 
-      {!loading && !notFound && lineIndex >= 0 && displayWords.length > 0 && (
+      {LYRICS_ENABLED && !loading && !notFound && lineIndex >= 0 && displayWords.length > 0 && (
         <LyricLine
           key={lineIndex}
           displayWords={displayWords}

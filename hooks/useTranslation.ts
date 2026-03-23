@@ -25,10 +25,18 @@ async function translateText(text: string): Promise<string> {
   return text; // fallback: orijinal metni göster
 }
 
-export function useTranslation(text: string | null) {
+export function useTranslation(text: string | null, prefetchText?: string | null) {
   const [translated, setTranslated] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const cacheRef = useRef<Map<string, string>>(new Map());
+
+  // Bir sonraki satırı arka planda cache'le
+  useEffect(() => {
+    if (!prefetchText || cacheRef.current.has(prefetchText)) return;
+    translateText(prefetchText).then((result) => {
+      cacheRef.current.set(prefetchText, result);
+    });
+  }, [prefetchText]);
 
   useEffect(() => {
     if (!text) {
