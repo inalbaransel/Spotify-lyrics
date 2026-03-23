@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
+
 interface TranslationPanelProps {
   translated: string | null;
   loading: boolean;
@@ -13,24 +15,51 @@ export function TranslationPanel({
   lineIndex,
   mutedColor,
 }: TranslationPanelProps) {
-  if (!loading && !translated) return null;
+  const incoming = loading ? null : translated;
+
+  const [displayed, setDisplayed] = useState<string | null>(null);
+  const [exiting, setExiting] = useState(false);
+  const nextRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    nextRef.current = incoming;
+
+    if (!displayed) {
+      // Gösterilecek eski metin yok, direkt gir
+      setDisplayed(incoming);
+      return;
+    }
+
+    // Eski metni çıkart, sonra yenisini göster
+    setExiting(true);
+    const timer = setTimeout(() => {
+      setExiting(false);
+      setDisplayed(nextRef.current);
+    }, 160);
+
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lineIndex, incoming]);
+
+  if (!displayed && !exiting) return null;
 
   return (
     <div
-      // Mobilde: sağ üst — Masaüstünde: sağ alt
       className="fixed top-6 right-6 max-w-[200px] text-right md:top-auto md:bottom-8 md:right-8 md:max-w-[300px]"
       style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
     >
       <p
-        key={lineIndex}
-        className="text-sm italic leading-snug animate-fade-in md:text-xl md:leading-normal"
+        key={exiting ? "exit" : `enter-${lineIndex}`}
+        className={`text-sm italic leading-snug md:text-xl md:leading-normal ${
+          exiting ? "animate-translation-out" : "animate-translation-in"
+        }`}
         style={{
           color: mutedColor,
-          opacity: loading ? 0.3 : 0.7,
-          transition: "color 1.5s ease, opacity 0.3s ease",
+          opacity: 0.7,
+          transition: "color 1.5s ease",
         }}
       >
-        {loading ? "..." : translated}
+        {displayed ?? "..."}
       </p>
     </div>
   );

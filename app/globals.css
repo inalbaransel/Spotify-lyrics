@@ -45,3 +45,31 @@ body {
 .animate-fade-in {
   animation: fade-in 0.35s ease both;
 }
+
+@keyframes translation-in {
+  0%   { opacity: 0; transform: translateY(14px); filter: blur(5px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes translation-out {
+  0%   { opacity: 1; transform: translateY(0); filter: blur(0); }
+  100% { opacity: 0; transform: translateY(-10px); filter: blur(4px); }
+}
+
+.animate-translation-in {
+  animation: translation-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-translation-out {
+  animation: translation-out 0.16s ease-in both;
+}
+
+@keyframes dot-bounce {
+  0%, 55%, 100% { transform: translateY(0); }
+  28%            { transform: translateY(-1em); }
+}
+
+.animate-dot-bounce {
+  animation: dot-bounce 1.1s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
