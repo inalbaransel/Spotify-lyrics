@@ -25,6 +25,8 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const modelRef = useRef<any>(null);
   const glowRef = useRef<HTMLDivElement>(null);
+  const lastBeatTimeRef = useRef<number>(-9999);
+  const beatCountRef = useRef<number>(0);
 
   // Init PixiJS + Live2D once
   useEffect(() => {
@@ -61,6 +63,26 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
 
         positionModel(model, window.innerWidth, window.innerHeight);
 
+        // Patch coreModel.update to inject beat-driven dance params
+        // This runs AFTER motion/physics but BEFORE mesh vertex apply — guaranteed correct timing
+        const coreModel = model.internalModel.coreModel;
+        const origCoreUpdate = coreModel.update.bind(coreModel);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (coreModel as any).update = () => {
+          const elapsed = performance.now() - lastBeatTimeRef.current;
+          if (elapsed < 700) {
+            const t = Math.sin((elapsed / 700) * Math.PI); // bell curve: 0→1→0
+            const dir = beatCountRef.current % 2 === 0 ? 1 : -1;
+            try {
+              coreModel.setParameterValueById("ParamBodyAngleZ", t * 12 * dir);
+              coreModel.setParameterValueById("ParamBodyAngleX", t * -5);
+              coreModel.setParameterValueById("ParamBodyUpper", t * 8 * dir);
+              coreModel.setParameterValueById("ParamBustY", t * 0.5);
+            } catch { /* param absent — skip */ }
+          }
+          origCoreUpdate();
+        };
+
         // Start idle motion
         (model as unknown as { motion: (group: string) => void }).motion("Idle");
       } catch (e) {
@@ -96,8 +118,13 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
     const model = modelRef.current;
     if (!model) return;
 
+    lastBeatTimeRef.current = performance.now();
+    beatCountRef.current++;
+
     try {
-      (model as unknown as { motion: (group: string) => void }).motion("Use");
+      // priority 3 = FORCE: interrupts current motion, starts new "Use" motion
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (model as any).motion("Use", undefined, 3);
     } catch {}
 
     // CSS glow flash
