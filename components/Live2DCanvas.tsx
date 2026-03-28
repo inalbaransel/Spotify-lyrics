@@ -16,7 +16,7 @@ function positionModel(model: any, screenW: number, screenH: number) {
   const scale = (screenH * 0.9) / origH;
   model.scale.set(scale);
   model.x = (screenW - origW * scale) / 2;
-  model.y = screenH - origH * scale * 0.02;
+  model.y = screenH - origH * scale;
 }
 
 export default function Live2DCanvas({ beats, progressMs }: Props) {
