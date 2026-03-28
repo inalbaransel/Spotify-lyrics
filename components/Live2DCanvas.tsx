@@ -9,6 +9,16 @@ interface Props {
   progressMs: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function positionModel(model: any, screenW: number, screenH: number) {
+  const origW = model.internalModel?.originalWidth ?? model.width ?? 1000;
+  const origH = model.internalModel?.originalHeight ?? model.height ?? 1000;
+  const scale = (screenH * 0.9) / origH;
+  model.scale.set(scale);
+  model.x = (screenW - origW * scale) / 2;
+  model.y = screenH - origH * scale * 0.02;
+}
+
 export default function Live2DCanvas({ beats, progressMs }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appRef = useRef<import("pixi.js").Application | null>(null);
@@ -33,11 +43,11 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
         view: canvasRef.current!,
         width: window.innerWidth,
         height: window.innerHeight,
-        transparent: true,
+        backgroundAlpha: 0,
         antialias: true,
         autoDensity: true,
         resolution: window.devicePixelRatio || 1,
-      } as ConstructorParameters<typeof PIXI.Application>[0]);
+      });
       appRef.current = app;
 
       try {
@@ -49,14 +59,7 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
 
         app.stage.addChild(model as unknown as import("pixi.js").DisplayObject);
 
-        // Scale to fill screen (taller than wide, so fit to height)
-        const origW = model.internalModel.originalWidth;
-        const origH = model.internalModel.originalHeight;
-        const scale = (window.innerHeight * 0.9) / origH;
-        model.scale.set(scale);
-        // Center horizontally, anchor to bottom
-        model.x = (window.innerWidth - origW * scale) / 2;
-        model.y = window.innerHeight - origH * scale * 0.02;
+        positionModel(model, window.innerWidth, window.innerHeight);
 
         // Start idle motion
         (model as unknown as { motion: (group: string) => void }).motion("Idle");
@@ -82,12 +85,7 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
       const model = modelRef.current;
       if (!app || !model) return;
       app.renderer.resize(window.innerWidth, window.innerHeight);
-      const origW = model.internalModel.originalWidth;
-      const origH = model.internalModel.originalHeight;
-      const scale = (window.innerHeight * 0.9) / origH;
-      model.scale.set(scale);
-      model.x = (window.innerWidth - origW * scale) / 2;
-      model.y = window.innerHeight - origH * scale * 0.02;
+      positionModel(model, window.innerWidth, window.innerHeight);
     }
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
