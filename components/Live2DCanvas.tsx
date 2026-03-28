@@ -65,7 +65,8 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
 
         // Patch coreModel.update to inject beat-driven dance params
         // This runs AFTER motion/physics but BEFORE mesh vertex apply — guaranteed correct timing
-        const coreModel = model.internalModel.coreModel;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const coreModel = model.internalModel.coreModel as any;
         const origCoreUpdate = coreModel.update.bind(coreModel);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (coreModel as any).update = () => {
