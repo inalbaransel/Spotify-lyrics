@@ -23,10 +23,9 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
 
     async function init() {
       const PIXI = await import("pixi.js");
-      const { Live2DModel } = await import("pixi-live2d-display/cubism4");
-
-      // Expose PIXI globally — required by pixi-live2d-display
+      // MUST set window.PIXI BEFORE importing pixi-live2d-display
       (window as unknown as Record<string, unknown>).PIXI = PIXI;
+      const { Live2DModel } = await import("pixi-live2d-display/cubism4");
 
       if (destroyed) return;
 
@@ -34,31 +33,30 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
         view: canvasRef.current!,
         width: window.innerWidth,
         height: window.innerHeight,
-        backgroundAlpha: 0,
+        transparent: true,
         antialias: true,
         autoDensity: true,
         resolution: window.devicePixelRatio || 1,
-      });
+      } as ConstructorParameters<typeof PIXI.Application>[0]);
       appRef.current = app;
 
       try {
         const model = await Live2DModel.from(
           "/live2d/haru/haru_greeter_t03.model3.json"
         );
-        if (destroyed) { app.destroy(true); return; }
+        if (destroyed) { return; } // app already destroyed in cleanup
         modelRef.current = model;
 
         app.stage.addChild(model as unknown as import("pixi.js").DisplayObject);
 
-        // Scale & center the model
-        const scale = Math.max(
-          window.innerHeight / model.height,
-          window.innerWidth / model.width
-        ) * 0.85;
+        // Scale to fill screen (taller than wide, so fit to height)
+        const origW = model.internalModel.originalWidth;
+        const origH = model.internalModel.originalHeight;
+        const scale = (window.innerHeight * 0.9) / origH;
         model.scale.set(scale);
-        model.x = window.innerWidth / 2;
-        model.y = window.innerHeight * 0.95;
-        model.anchor.set(0.5, 1);
+        // Center horizontally, anchor to bottom
+        model.x = (window.innerWidth - origW * scale) / 2;
+        model.y = window.innerHeight - origH * scale * 0.02;
 
         // Start idle motion
         (model as unknown as { motion: (group: string) => void }).motion("Idle");
@@ -71,7 +69,7 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
 
     return () => {
       destroyed = true;
-      appRef.current?.destroy(true);
+      appRef.current?.destroy(false); // don't remove canvas, React manages it
       appRef.current = null;
       modelRef.current = null;
     };
@@ -84,13 +82,12 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
       const model = modelRef.current;
       if (!app || !model) return;
       app.renderer.resize(window.innerWidth, window.innerHeight);
-      const scale = Math.max(
-        window.innerHeight / model.height,
-        window.innerWidth / model.width
-      ) * 0.85;
+      const origW = model.internalModel.originalWidth;
+      const origH = model.internalModel.originalHeight;
+      const scale = (window.innerHeight * 0.9) / origH;
       model.scale.set(scale);
-      model.x = window.innerWidth / 2;
-      model.y = window.innerHeight * 0.95;
+      model.x = (window.innerWidth - origW * scale) / 2;
+      model.y = window.innerHeight - origH * scale * 0.02;
     }
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
