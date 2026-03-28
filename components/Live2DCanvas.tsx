@@ -69,30 +69,22 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
         const coreModel = model.internalModel.coreModel as any;
         const origCoreUpdate = coreModel.update.bind(coreModel);
         coreModel.update = () => {
-          const now = performance.now();
-          const timeSinceLastBeat = now - lastBeatTimeRef.current;
+          const timeSinceLastBeat = performance.now() - lastBeatTimeRef.current;
           const interval = beatIntervalRef.current;
 
-          // Dance while music is playing (stop after 3s silence)
+          // Add gentle sway on top of existing motion (additive, doesn't fight physics)
           if (timeSinceLastBeat < 3000) {
-            // Continuous sine wave locked to beat phase
             const phase = ((timeSinceLastBeat % interval) / interval) * Math.PI * 2;
-            // Fade out gently in the last second of silence
             const fade = timeSinceLastBeat > 2000
               ? 1 - (timeSinceLastBeat - 2000) / 1000
               : 1;
             const dir = beatCountRef.current % 2 === 0 ? 1 : -1;
 
-            const sway = Math.sin(phase) * 18 * dir * fade;          // hip sway L/R
-            const bounce = Math.sin(phase * 2) * -10 * fade;         // up-down bounce
-            const upper = Math.sin(phase + 0.4) * 12 * dir * fade;   // upper body follows
-            const bust = Math.abs(Math.sin(phase)) * 1.2 * fade;     // chest bounce
-
             try {
-              coreModel.setParameterValueById("ParamBodyAngleZ", sway);
-              coreModel.setParameterValueById("ParamBodyAngleX", bounce);
-              coreModel.setParameterValueById("ParamBodyUpper", upper);
-              coreModel.setParameterValueById("ParamBustY", bust);
+              // addParameterValueById = adds ON TOP of motion values, doesn't override
+              coreModel.addParameterValueById("ParamBodyAngleZ", Math.sin(phase) * 8 * dir * fade);
+              coreModel.addParameterValueById("ParamBodyAngleX", Math.sin(phase * 2) * -4 * fade);
+              coreModel.addParameterValueById("ParamBodyUpper", Math.sin(phase + 0.5) * 6 * dir * fade);
             } catch { /* param absent — skip */ }
           }
 
@@ -162,22 +154,26 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
 
   useBeatSync(beats, progressMs, onBeat);
 
-  // Simulated beat fallback when Spotify audio-analysis unavailable (403 / non-premium)
-  // Fires at the current estimated tempo so the character always dances
+  // Simulated beat timing when Spotify audio-analysis unavailable (403 / non-premium)
+  // Only updates timing refs — does NOT trigger motion interrupts (avoids jitter)
   useEffect(() => {
-    if (beats.length > 0) return; // real beats available — no simulation needed
+    if (beats.length > 0) return;
 
     const tick = () => {
-      onBeat();
+      const now = performance.now();
+      const prev = lastBeatTimeRef.current;
+      if (prev > 0) {
+        const gap = now - prev;
+        if (gap > 200 && gap < 2000) {
+          beatIntervalRef.current = beatIntervalRef.current * 0.7 + gap * 0.3;
+        }
+      }
+      lastBeatTimeRef.current = now;
+      beatCountRef.current++;
     };
 
-    // Start immediately then repeat at current interval
     tick();
-    const id = setInterval(() => {
-      tick();
-      // Reschedule dynamically to match updated beatInterval
-    }, beatIntervalRef.current);
-
+    const id = setInterval(tick, beatIntervalRef.current);
     return () => clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [beats.length]);
