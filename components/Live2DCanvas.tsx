@@ -21,13 +21,13 @@ function positionModel(model: any, screenW: number, screenH: number) {
 
 export default function Live2DCanvas({ beats, progressMs }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const danceRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<import("pixi.js").Application | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const modelRef = useRef<any>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const lastBeatTimeRef = useRef<number>(-9999);
   const beatCountRef = useRef<number>(0);
-  // Smoothed estimate of ms between beats (default 500ms = 120 BPM)
   const beatIntervalRef = useRef<number>(500);
 
   // Init PixiJS + Live2D once
@@ -37,7 +37,6 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
 
     async function init() {
       const PIXI = await import("pixi.js");
-      // MUST set window.PIXI BEFORE importing pixi-live2d-display
       (window as unknown as Record<string, unknown>).PIXI = PIXI;
       const { Live2DModel } = await import("pixi-live2d-display/cubism4");
 
@@ -56,42 +55,14 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
 
       try {
         const model = await Live2DModel.from(
-          "/live2d/haru/haru_greeter_t03.model3.json"
+          "/live2d/hiyori/Hiyori.model3.json"
         );
-        if (destroyed) { return; }
+        if (destroyed) return;
         modelRef.current = model;
 
         app.stage.addChild(model as unknown as import("pixi.js").DisplayObject);
         positionModel(model, window.innerWidth, window.innerHeight);
 
-        // Patch coreModel.update — runs AFTER motion/physics, BEFORE mesh apply
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const coreModel = model.internalModel.coreModel as any;
-        const origCoreUpdate = coreModel.update.bind(coreModel);
-        coreModel.update = () => {
-          const timeSinceLastBeat = performance.now() - lastBeatTimeRef.current;
-          const interval = beatIntervalRef.current;
-
-          // Add gentle sway on top of existing motion (additive, doesn't fight physics)
-          if (timeSinceLastBeat < 3000) {
-            const phase = ((timeSinceLastBeat % interval) / interval) * Math.PI * 2;
-            const fade = timeSinceLastBeat > 2000
-              ? 1 - (timeSinceLastBeat - 2000) / 1000
-              : 1;
-            const dir = beatCountRef.current % 2 === 0 ? 1 : -1;
-
-            try {
-              // addParameterValueById = adds ON TOP of motion values, doesn't override
-              coreModel.addParameterValueById("ParamBodyAngleZ", Math.sin(phase) * 8 * dir * fade);
-              coreModel.addParameterValueById("ParamBodyAngleX", Math.sin(phase * 2) * -4 * fade);
-              coreModel.addParameterValueById("ParamBodyUpper", Math.sin(phase + 0.5) * 6 * dir * fade);
-            } catch { /* param absent — skip */ }
-          }
-
-          origCoreUpdate();
-        };
-
-        // Start idle motion
         (model as unknown as { motion: (group: string) => void }).motion("Idle");
       } catch (e) {
         console.error("Live2D model load error:", e);
@@ -121,14 +92,20 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  const triggerDance = useCallback(() => {
+    const el = danceRef.current;
+    if (!el) return;
+    // Set duration to ~80% of beat interval so it lands before next beat
+    el.style.animationDuration = `${Math.max(200, beatIntervalRef.current * 0.8)}ms`;
+    el.classList.remove("live2d-dance");
+    void el.offsetWidth; // reflow to restart animation
+    el.classList.add("live2d-dance");
+  }, []);
+
   // Beat reaction
   const onBeat = useCallback(() => {
-    const model = modelRef.current;
-    if (!model) return;
-
     const now = performance.now();
     const prev = lastBeatTimeRef.current;
-    // Update smoothed beat interval estimate
     if (prev > 0) {
       const gap = now - prev;
       if (gap > 200 && gap < 2000) {
@@ -138,11 +115,16 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
     lastBeatTimeRef.current = now;
     beatCountRef.current++;
 
-    try {
-      // FORCE (3): interrupts current motion, starts fresh "Use" motion each beat
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (model as any).motion("Use", undefined, 3);
-    } catch {}
+    triggerDance();
+
+    // Trigger "Use" motion every 4 beats with normal priority (no jarring interrupts)
+    const model = modelRef.current;
+    if (model && beatCountRef.current % 4 === 0) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (model as any).motion("TapBody", undefined, 2);
+      } catch {}
+    }
 
     // CSS glow flash
     if (glowRef.current) {
@@ -150,12 +132,11 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
       void glowRef.current.offsetWidth;
       glowRef.current.classList.add("beat-active");
     }
-  }, []);
+  }, [triggerDance]);
 
   useBeatSync(beats, progressMs, onBeat);
 
-  // Simulated beat timing when Spotify audio-analysis unavailable (403 / non-premium)
-  // Only updates timing refs — does NOT trigger motion interrupts (avoids jitter)
+  // Simulated beat when Spotify audio-analysis unavailable (non-premium / 403)
   useEffect(() => {
     if (beats.length > 0) return;
 
@@ -170,21 +151,29 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
       }
       lastBeatTimeRef.current = now;
       beatCountRef.current++;
+      triggerDance();
     };
 
     tick();
-    const id = setInterval(tick, beatIntervalRef.current);
+    const id = setInterval(tick, 500);
     return () => clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [beats.length]);
 
   return (
     <div className="absolute inset-0 overflow-hidden">
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
-        style={{ display: "block" }}
-      />
+      {/* danceRef wraps canvas — CSS transform applied here, not inside Live2D */}
+      <div
+        ref={danceRef}
+        className="absolute inset-0"
+        style={{ transformOrigin: "50% 95%" }}
+      >
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full"
+          style={{ display: "block" }}
+        />
+      </div>
       <div
         ref={glowRef}
         className="absolute inset-0 pointer-events-none beat-glow-overlay"

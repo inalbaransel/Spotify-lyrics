@@ -94,3 +94,16 @@ body {
 .beat-glow-overlay.beat-active {
   animation: beat-glow-flash 0.45s ease-out forwards;
 }
+
+/* ── Live2D dance bounce ────────────────────────────────────── */
+@keyframes live2d-dance {
+  0%   { transform: translateY(0)     rotate(0deg)     scaleX(1);    }
+  20%  { transform: translateY(-14px) rotate(-1.8deg)  scaleX(1.01); }
+  55%  { transform: translateY(-7px)  rotate(1.2deg)   scaleX(0.99); }
+  85%  { transform: translateY(-2px)  rotate(-0.4deg)  scaleX(1);    }
+  100% { transform: translateY(0)     rotate(0deg)     scaleX(1);    }
+}
+
+.live2d-dance {
+  animation: live2d-dance 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
