@@ -73,3 +73,24 @@ body {
 .animate-dot-bounce {
   animation: dot-bounce 1.1s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
+
+/* ── Anime theme beat animations ───────────────────────── */
+@keyframes beat-glow-flash {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.beat-glow-overlay {
+  background: radial-gradient(
+    ellipse at 50% 80%,
+    rgba(180, 120, 255, 0.35) 0%,
+    rgba(80, 180, 255, 0.15) 40%,
+    transparent 70%
+  );
+  opacity: 0;
+}
+
+.beat-glow-overlay.beat-active {
+  animation: beat-glow-flash 0.45s ease-out forwards;
+}

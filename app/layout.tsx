@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Playfair_Display } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -21,7 +23,11 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body className={`${playfair.variable} font-display antialiased`}>
-        {children}
+        <Script
+          src="/live2dcubismcore.min.js"
+          strategy="beforeInteractive"
+        />
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
