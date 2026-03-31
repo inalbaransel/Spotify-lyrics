@@ -93,45 +93,61 @@ export function LyricsPlayer() {
 
       {/* Content layer */}
       <div
-        className="relative w-full h-full flex items-center justify-center"
-        style={{ zIndex: 10 }}
+        className="relative w-full h-full flex items-center"
+        style={{ zIndex: 10, justifyContent: isAnime ? "flex-start" : "center" }}
       >
-        {LYRICS_ENABLED && loading && (
-          <p
-            className="text-2xl"
-            style={{ color: mutedColor, fontFamily: "var(--font-playfair), Georgia, serif" }}
-          >
-            ...
-          </p>
-        )}
-
-        {LYRICS_ENABLED && !loading && notFound && (
-          <p
-            className="text-2xl text-center px-8"
-            style={{ color: mutedColor, fontFamily: "var(--font-playfair), Georgia, serif" }}
-          >
-            şarkı sözleri bulunamadı.
-          </p>
-        )}
-
-        {isInstrumental && (
-          <InstrumentalDots
-            elapsed={gapElapsed}
-            duration={gapDuration}
-            color={mutedColor}
-          />
-        )}
-
-        {LYRICS_ENABLED && !loading && !notFound && lineIndex >= 0 && displayWords.length > 0 && !isMidSongGap && (
-          isAnime ? (
-            <div
-              className="px-8 py-4 rounded-2xl"
-              style={{
-                background: "rgba(0,0,0,0.35)",
-                backdropFilter: "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)",
-              }}
+        <div
+          style={
+            isAnime
+              ? { width: "50%", display: "flex", flexDirection: "column", alignItems: "center" }
+              : undefined
+          }
+        >
+          {LYRICS_ENABLED && loading && (
+            <p
+              className="text-2xl"
+              style={{ color: mutedColor, fontFamily: "var(--font-playfair), Georgia, serif" }}
             >
+              ...
+            </p>
+          )}
+
+          {LYRICS_ENABLED && !loading && notFound && (
+            <p
+              className="text-2xl text-center px-8"
+              style={{ color: mutedColor, fontFamily: "var(--font-playfair), Georgia, serif" }}
+            >
+              şarkı sözleri bulunamadı.
+            </p>
+          )}
+
+          {isInstrumental && (
+            <InstrumentalDots
+              elapsed={gapElapsed}
+              duration={gapDuration}
+              color={mutedColor}
+            />
+          )}
+
+          {LYRICS_ENABLED && !loading && !notFound && lineIndex >= 0 && displayWords.length > 0 && !isMidSongGap && (
+            isAnime ? (
+              <div
+                className="px-8 py-4 rounded-2xl"
+                style={{
+                  background: "rgba(0,0,0,0.35)",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                }}
+              >
+                <LyricLine
+                  key={lineIndex}
+                  displayWords={displayWords}
+                  allWords={allWords}
+                  lineIndex={lineIndex}
+                  textColor={textColor}
+                />
+              </div>
+            ) : (
               <LyricLine
                 key={lineIndex}
                 displayWords={displayWords}
@@ -139,17 +155,9 @@ export function LyricsPlayer() {
                 lineIndex={lineIndex}
                 textColor={textColor}
               />
-            </div>
-          ) : (
-            <LyricLine
-              key={lineIndex}
-              displayWords={displayWords}
-              allWords={allWords}
-              lineIndex={lineIndex}
-              textColor={textColor}
-            />
-          )
-        )}
+            )
+          )}
+        </div>
       </div>
 
       <NowPlayingBar
