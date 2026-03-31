@@ -6,6 +6,7 @@ import type { Beat } from "@/hooks/useAudioAnalysis";
 interface Props {
   beats: Beat[];
   progressMs: number;
+  modelPath: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,7 +30,13 @@ function findBeatIndex(beats: Beat[], progressSec: number): number {
   return result;
 }
 
-export default function Live2DCanvas({ beats, progressMs }: Props) {
+// Hata fırlatmadan parametre ekle (model'de yoksa no-op)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function tryAdd(core: any, id: string, val: number) {
+  try { core.addParameterValueById(id, val); } catch { /* parametre yoksa sessizce atla */ }
+}
+
+export default function Live2DCanvas({ beats, progressMs, modelPath }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appRef = useRef<import("pixi.js").Application | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,7 +71,7 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
       appRef.current = app;
 
       try {
-        const model = await Live2DModel.from("/live2d/hiyori/Hiyori.model3.json");
+        const model = await Live2DModel.from(modelPath);
         if (destroyed) return;
         modelRef.current = model;
 
@@ -93,24 +100,45 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const core = (m as any).internalModel?.coreModel;
-          if (!core || typeof core.addParameterValueById !== "function") return;
+          if (!core) return;
 
-          // Gövde sol/sağ sallantı (ana dans hareketi)
-          core.addParameterValueById("ParamBodyAngleZ", dir * Math.sin(t * Math.PI) * 12);
-          // Gövde hafif öne bounce
-          core.addParameterValueById("ParamBodyAngleX", -Math.abs(Math.sin(t * Math.PI)) * 4);
-          // Omuz ritmi
-          core.addParameterValueById("ParamShoulder", Math.sin(t * Math.PI * 2) * 0.4);
-          // Kollar karşılıklı (gövdenin ters yönünde)
-          core.addParameterValueById("ParamArmLA", Math.sin(t * Math.PI) * 18 * dir);
-          core.addParameterValueById("ParamArmRA", -Math.sin(t * Math.PI) * 18 * dir);
-          // Kafa gövdeyi takip eder
-          core.addParameterValueById("ParamAngleZ", dir * Math.sin(t * Math.PI) * 5);
+          // ── Gövde (her iki model) ────────────────────────────────────────────
+          // Sol/sağ sallantı - ana dans hareketi (kalça etkisi)
+          tryAdd(core, "ParamBodyAngleZ", dir * Math.sin(t * Math.PI) * 20);
+          // 3D rotasyon - kalçanın gerçek dönüşü (önceki implementasyonda yoktu!)
+          tryAdd(core, "ParamBodyAngleY", Math.sin(t * Math.PI * 2) * 12);
+          // Öne/arkaya bounce - vücut enerjisi
+          tryAdd(core, "ParamBodyAngleX", -Math.abs(Math.sin(t * Math.PI)) * 7);
+          // Üst gövde (Haru'da var, Hiyori'de yok → no-op)
+          tryAdd(core, "ParamBodyUpper", dir * Math.sin(t * Math.PI) * 6);
+
+          // ── Bacak / kalça ──────────────────────────────────────────────────
+          // Hiyori'de ParamLeg var, bacak/kalça bölgesi
+          tryAdd(core, "ParamLeg", dir * Math.sin(t * Math.PI * 2) * 0.9);
+
+          // ── Omuz ───────────────────────────────────────────────────────────
+          tryAdd(core, "ParamShoulder", Math.sin(t * Math.PI * 2) * 0.5);
+
+          // ── Kollar - gövdenin ters yönünde sallanır ─────────────────────────
+          tryAdd(core, "ParamArmLA",  dir * Math.sin(t * Math.PI) * 25);
+          tryAdd(core, "ParamArmRA", -dir * Math.sin(t * Math.PI) * 25);
+          // Haru'nun ikinci kol seti (LB/RB) - biraz faz gecikmeli
+          tryAdd(core, "ParamArmLB",  dir * Math.sin(t * Math.PI + Math.PI / 4) * 20);
+          tryAdd(core, "ParamArmRB", -dir * Math.sin(t * Math.PI + Math.PI / 4) * 20);
+          // Haru el açıları
+          tryAdd(core, "ParamHandAngleR", Math.sin(t * Math.PI * 2) * 20);
+          tryAdd(core, "ParamHandAngleL", -Math.sin(t * Math.PI * 2) * 20);
+
+          // ── Göğüs bounce (Haru) ─────────────────────────────────────────────
+          tryAdd(core, "ParamBustY", Math.abs(Math.sin(t * Math.PI)) * 0.4);
+
+          // ── Kafa gövdeyi takip eder ─────────────────────────────────────────
+          tryAdd(core, "ParamAngleZ", dir * Math.sin(t * Math.PI) * 6);
         };
 
         ticker.add(onTick);
 
-        // Cleanup için ticker'ı sakla
+        // Cleanup için sakla
         (app as unknown as Record<string, unknown>)._danceTicker = onTick;
         (app as unknown as Record<string, unknown>)._PIXI = PIXI;
 
@@ -123,7 +151,6 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
 
     return () => {
       destroyed = true;
-      // Dans ticker'ı temizle
       const app = appRef.current;
       if (app) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -138,7 +165,9 @@ export default function Live2DCanvas({ beats, progressMs }: Props) {
       appRef.current = null;
       modelRef.current = null;
     };
-  }, []);
+  // modelPath değişince modeli yeniden yükle
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelPath]);
 
   useEffect(() => {
     function onResize() {

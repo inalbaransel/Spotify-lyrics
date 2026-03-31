@@ -2,8 +2,14 @@
 
 import dynamic from "next/dynamic";
 import type { Beat } from "@/hooks/useAudioAnalysis";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const Live2DCanvas = dynamic(() => import("./Live2DCanvas"), { ssr: false });
+
+const MODEL_PATHS: Record<string, string> = {
+  hiyori: "/live2d/hiyori/Hiyori.model3.json",
+  haru: "/live2d/haru/haru_greeter_t03.model3.json",
+};
 
 interface Props {
   beats: Beat[];
@@ -11,9 +17,12 @@ interface Props {
 }
 
 export function AnimeBackground({ beats, progressMs }: Props) {
+  const { character } = useTheme();
+  const modelPath = MODEL_PATHS[character] ?? MODEL_PATHS.hiyori;
+
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 0 }}>
-      <Live2DCanvas beats={beats} progressMs={progressMs} />
+      <Live2DCanvas beats={beats} progressMs={progressMs} modelPath={modelPath} />
 
       {/* Top gradient: fade to dark */}
       <div

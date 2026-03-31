@@ -1,15 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useTheme, Theme } from "@/contexts/ThemeContext";
+import { useTheme, Theme, Character } from "@/contexts/ThemeContext";
 
 const THEMES: { id: Theme; label: string; emoji: string; desc: string }[] = [
   { id: "classic", label: "Classic", emoji: "🎵", desc: "Album renkli, minimal" },
   { id: "anime", label: "Anime", emoji: "✨", desc: "Live2D karakter, beat sync" },
 ];
 
+const CHARACTERS: { id: Character; label: string; emoji: string; desc: string }[] = [
+  { id: "hiyori", label: "Hiyori", emoji: "🌸", desc: "Pembe saçlı, neşeli" },
+  { id: "haru", label: "Haru", emoji: "🍃", desc: "Yeşil kıyafetli, zarif" },
+];
+
 export function ThemeMenu() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, character, setCharacter } = useTheme();
   const [open, setOpen] = useState(false);
 
   return (
@@ -48,6 +53,31 @@ export function ThemeMenu() {
               </div>
             </button>
           ))}
+
+          {/* Karakter seçici - sadece anime modunda */}
+          {theme === "anime" && (
+            <>
+              <div className="border-t border-white/10 my-1" />
+              <p className="text-white/50 text-xs uppercase tracking-widest px-1 mb-1">Karakter</p>
+              {CHARACTERS.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setCharacter(c.id)}
+                  className="flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 text-left"
+                  style={{
+                    background: character === c.id ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.05)",
+                    border: character === c.id ? "1px solid rgba(255,255,255,0.4)" : "1px solid transparent",
+                  }}
+                >
+                  <span className="text-xl">{c.emoji}</span>
+                  <div>
+                    <p className="text-white text-sm font-semibold leading-none mb-0.5">{c.label}</p>
+                    <p className="text-white/50 text-xs leading-none">{c.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </>
+          )}
         </div>
       </div>
 
